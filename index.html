@@ -87,6 +87,13 @@ function preloadImages(callback) {
 }
 
 /* ============================================================
+   合成音效
+   ============================================================ */
+const mergeSound = new Audio('./sounds/merge.mp3');
+mergeSound.volume = 0.55;
+mergeSound.load();
+
+/* ============================================================
    画布与自适应
    ============================================================ */
 const canvas = document.getElementById('game');
@@ -223,10 +230,25 @@ function processMerges() {
       localStorage.setItem('bigai_best', String(best));
     }
 
+    // 播放合成音效（用克隆体，避免快速连续合成时互相打断）
+    playMergeSound(level);
+
     const spec = AI_DATA[level + 1];
-    effects.push({ type: 'ring', x: nx, y: ny, r: spec.r * SIZE_SCALE * 0.9, color: spec.color, t: 0, life: 380 });
-    effects.push({ type: 'text', x: nx, y: ny - spec.r * SIZE_SCALE, text: '+' + gain, t: 0, life: 650 });
+    effects.push({ type: 'ring', x: nx, y: ny, r: spec.r * 0.9, color: spec.color, t: 0, life: 380 });
+    effects.push({ type: 'text', x: nx, y: ny - spec.r, text: '+' + gain, t: 0, life: 650 });
   }
+}
+
+// 播放音效（每次克隆一份，允许同时播放多个）
+function playMergeSound(level) {
+  try {
+    const s = mergeSound.cloneNode();
+    // 等级越高，音调略高一点，合成高级鱼时有"进阶感"
+    s.playbackRate = 1 + level * 0.06;
+    s.volume = Math.min(0.7, 0.45 + level * 0.03);
+    const p = s.play();
+    if (p && p.catch) p.catch(() => {}); // 忽略浏览器拦截的报错
+  } catch (e) {}
 }
 
 /* ============================================================
@@ -312,8 +334,21 @@ function updateAim(e) {
   aimX = clamp(x, 0, W);
 }
 
+let audioUnlocked = false;
+function unlockAudio() {
+  if (audioUnlocked) return;
+  audioUnlocked = true;
+  const s = mergeSound.cloneNode();
+  s.volume = 0;
+  const p = s.play();
+  if (p && p.then) {
+    p.then(() => { s.pause(); s.currentTime = 0; }).catch(() => {});
+  }
+}
+
 canvas.addEventListener('pointerdown', (e) => {
   e.preventDefault();
+  unlockAudio();
   if (state === 'over') {
     if (performance.now() - overAt > 700) restart();
     return;
