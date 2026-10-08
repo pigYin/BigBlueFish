@@ -242,12 +242,13 @@ function processMerges() {
 // 播放音效（每次克隆一份，允许同时播放多个）
 function playMergeSound(level) {
   try {
-    const s = mergeSound.cloneNode();
-    // 等级越高，音调略高一点，合成高级鱼时有"进阶感"
+    // 如果合成到了最高级，用另一个音效
+    const src = (level + 1 === MAX_LEVEL) ? './sounds/rice.mp3' : './sounds/merge.mp3';
+    const s = new Audio(src);
     s.playbackRate = 1 + level * 0.06;
     s.volume = Math.min(0.7, 0.45 + level * 0.03);
     const p = s.play();
-    if (p && p.catch) p.catch(() => {}); // 忽略浏览器拦截的报错
+    if (p && p.catch) p.catch(() => {});
   } catch (e) {}
 }
 
